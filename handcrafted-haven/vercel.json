@@ -1,9 +1,7 @@
 {
   "version": 2,
   "framework": "nextjs",
-  "buildCommand": "pnpm build",
+  "buildCommand": "prisma generate && pnpm build",
   "installCommand": "pnpm install",
-  "devCommand": "pnpm dev",
-  "env": {
-  }
+  "devCommand": "pnpm dev"
 }
