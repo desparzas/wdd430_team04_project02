@@ -24,7 +24,8 @@ export interface Category {
   name: string
   slug?: string
   icon?: string           // Emoji or icon identifier
-  count: number           // Number of items in category
+  count?: number          // Number of items in category (legacy)
+  productCount?: number   // Number of items in category (from API)
   description?: string    // Optional category description
   featured?: boolean      // Optional featured status
   imageUrl?: string       // Optional category image

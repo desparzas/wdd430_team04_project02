@@ -1,11 +1,11 @@
 'use client'
 
-import { useState, useMemo } from 'react'
+import { useState, useMemo, useEffect } from 'react'
 import { Search, Grid3X3, List, SlidersHorizontal } from 'lucide-react'
 import ProductCard from '../components/ProductCard'
 import Header from '../components/Header'
 import Footer from '../components/Footer'
-import { featuredProducts, categories } from '../data/sampleData'
+import { Product, Category } from '../types'
 
 export default function ProductsPage() {
   const [searchTerm, setSearchTerm] = useState('')
@@ -14,16 +14,48 @@ export default function ProductsPage() {
   const [priceRange, setPriceRange] = useState([0, 500])
   const [showFilters, setShowFilters] = useState(false)
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid')
+  const [allProducts, setAllProducts] = useState<Product[]>([])
+  const [categories, setCategories] = useState<Category[]>([])
+  const [loading, setLoading] = useState(true)
 
-  const allProducts = featuredProducts
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        // Fetch products
+        const productsResponse = await fetch('/api/products')
+        const productsData = await productsResponse.json()
+        
+        if (productsData.success) {
+          setAllProducts(productsData.data)
+        }
+
+        // Fetch categories
+        const categoriesResponse = await fetch('/api/categories')
+        const categoriesData = await categoriesResponse.json()
+        
+        if (categoriesData.success) {
+          setCategories(categoriesData.data)
+        }
+      } catch (error) {
+        console.error('Error fetching data:', error)
+      } finally {
+        setLoading(false)
+      }
+    }
+
+    fetchData()
+  }, [])
 
   const filteredProducts = useMemo(() => {
     const filtered = allProducts.filter(product => {
-      const matchesSearch = product.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                           product.artisan.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                           product.category.toLowerCase().includes(searchTerm.toLowerCase())
+      const categoryName = typeof product.category === 'string' ? product.category : (product.category as any)?.name || 'Unknown'
+      const artisanName = typeof product.artisan === 'string' ? product.artisan : (product.artisan as any)?.name || 'Unknown'
       
-      const matchesCategory = selectedCategory === 'all' || product.category === selectedCategory
+      const matchesSearch = product.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                           artisanName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                           categoryName.toLowerCase().includes(searchTerm.toLowerCase())
+      
+      const matchesCategory = selectedCategory === 'all' || categoryName === selectedCategory
       
       const matchesPrice = product.price >= priceRange[0] && product.price <= priceRange[1]
       
@@ -43,6 +75,21 @@ export default function ProductsPage() {
         return filtered.sort((a, b) => a.name.localeCompare(b.name))
     }
   }, [allProducts, searchTerm, selectedCategory, sortBy, priceRange])
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-primary/5 to-accent/5">
+        <Header />
+        <div className="flex items-center justify-center flex-1 py-8">
+          <div className="text-center">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-accent mx-auto"></div>
+            <p className="mt-4 text-secondary">Loading products...</p>
+          </div>
+        </div>
+        <Footer />
+      </div>
+    )
+  }
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-primary/5 to-accent/5">
@@ -92,7 +139,7 @@ export default function ProductsPage() {
                     <option value="all">All categories</option>
                     {categories.map(category => (
                       <option key={category.id} value={category.name}>
-                        {category.icon} {category.name} ({category.count})
+                        {category.icon} {category.name} ({category.productCount || 0})
                       </option>
                     ))}
                   </select>
